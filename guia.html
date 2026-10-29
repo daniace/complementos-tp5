@@ -9,14 +9,52 @@
     --bg: #fafaf8; --fg: #1b1b1b; --muted: #5d5c58; --line: #dddcd5;
     --card: #ffffff; --accent: #2a6fc9; --warn-bg: #fdf1d6; --warn: #6b4a00;
     --ok-bg: #e3f4ec; --ok: #145c40; --code: #f1f0eb;
+    --surface: #fcfcfb; --grid: #e1e0d9; --axis: #c3c2b7; --ink-muted: #898781;
+    --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --s4: #eda100;
   }
   @media (prefers-color-scheme: dark) {
     :root {
       --bg: #121212; --fg: #ecebe7; --muted: #a9a8a2; --line: #2e2e2b;
       --card: #1b1b1a; --accent: #6aa5f0; --warn-bg: #3a2c0a; --warn: #f3cf7a;
       --ok-bg: #12392a; --ok: #9fe0c3; --code: #26261f;
+      --surface: #1a1a19; --grid: #2c2c2a; --axis: #4a4a46; --ink-muted: #898781;
+      --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500;
     }
   }
+  /* ---------- graficos ---------- */
+  .viz { background: var(--surface); border: 1px solid var(--line); border-radius: 10px;
+         padding: 14px 16px 12px; margin: 16px 0; position: relative; }
+  .viz h3 { margin: 0 0 4px; }
+  .viz .sub { margin: 0 0 10px; font-size: .92rem; }
+  .viz svg { width: 100%; height: auto; display: block; touch-action: none; }
+  .viz svg text { font: 12px system-ui, sans-serif; fill: var(--muted); }
+  .viz svg .tick { font-variant-numeric: tabular-nums; }
+  .viz svg .lbl { fill: var(--fg); font-weight: 600; }
+  .controls { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; margin-bottom: 10px; font-size: .92rem; }
+  .controls select, .controls button { font: inherit; color: var(--fg); background: var(--card);
+         border: 1px solid var(--line); border-radius: 6px; padding: 4px 10px; cursor: pointer; }
+  .controls button:hover, .controls select:hover { border-color: var(--axis); }
+  .controls button:disabled { opacity: .4; cursor: default; }
+  .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+  .seg button { border: 0; border-radius: 0; border-right: 1px solid var(--line); display: inline-flex; align-items: center; gap: 6px; }
+  .seg button:last-child { border-right: 0; }
+  .seg button[aria-pressed="true"] { background: var(--code); font-weight: 600; }
+  .key { display: inline-block; width: 14px; height: 3px; border-radius: 2px; vertical-align: middle; }
+  .swatch { display: inline-block; width: 10px; height: 10px; border-radius: 2px; vertical-align: middle; }
+  .legend { display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: .88rem; color: var(--muted); margin: 0 0 6px; }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .explica { background: var(--code); border-radius: 8px; padding: 10px 14px; margin-top: 10px; font-size: .95rem; }
+  .explica .paso { font-weight: 700; }
+  .explica .stop { color: var(--ok); font-weight: 700; }
+  .tip { position: absolute; pointer-events: none; background: var(--card); border: 1px solid var(--line);
+         border-radius: 8px; padding: 6px 10px; font-size: .85rem; box-shadow: 0 4px 14px rgba(0,0,0,.12);
+         display: none; white-space: nowrap; z-index: 5; }
+  .tip b { font-variant-numeric: tabular-nums; }
+  .tip .row { display: flex; align-items: center; gap: 8px; }
+  .tip .dim { color: var(--muted); }
+  table.iters tr.actual td { background: var(--code); font-weight: 600; }
+  .scroll { max-height: 260px; overflow: auto; margin-top: 8px; }
+  .scroll th { position: sticky; top: 0; z-index: 1; }
   * { box-sizing: border-box; }
   body { margin: 0; background: var(--bg); color: var(--fg);
          font: 16px/1.6 system-ui, -apple-system, "Segoe UI", sans-serif; }
@@ -90,6 +128,13 @@ la siguiente sea más chico que la <strong>tolerancia</strong> pedida.</p>
   <p><strong>Teorema de Bolzano</strong> (la base de los métodos cerrados): si f es continua en [a, b] y
   <strong>f(a)·f(b) &lt; 0</strong> (cambia de signo), entonces hay al menos una raíz en (a, b).</p>
   <p>Por eso Bisección y Posición falsa <em>exigen</em> que f(a) y f(b) tengan signos opuestos.</p>
+</div>
+
+<div class="viz" id="bolz">
+  <h3>Ej. 1: f(x) = x³ − 7x² + 14x − 6 tiene 3 raíces, una en cada intervalo</h3>
+  <p class="sub">En cada franja, f arranca de un lado del eje y termina del otro (cambio de signo), así que adentro hay una raíz (●).</p>
+  <svg id="bolz-svg" viewBox="0 0 760 300" role="img" aria-label="Gráfico de f del ejercicio 1 con sus tres raíces"></svg>
+  <div class="tip" id="bolz-tip"></div>
 </div>
 
 <!-- ===================================================== -->
@@ -180,6 +225,27 @@ la posición falsa usa los dos que <strong>encierran</strong> la raíz.</p>
 </details>
 </div>
 
+<div class="viz" id="vis">
+  <h3>Miralos funcionar, paso a paso</h3>
+  <p class="sub">Elegí un ejercicio y un método, y avanzá con <strong>Siguiente ▶</strong> (o las flechas ← →).
+  La curva es f(x); la raíz es donde corta al eje horizontal.</p>
+  <div class="controls">
+    <select id="vis-ej" aria-label="Ejercicio"></select>
+    <span class="seg" id="vis-met" role="group" aria-label="Método"></span>
+  </div>
+  <div class="controls">
+    <button id="vis-ini">⏮ Inicio</button>
+    <button id="vis-ant">◀ Anterior</button>
+    <button id="vis-sig">Siguiente ▶</button>
+    <button id="vis-fin">Final ⏭</button>
+    <label><input type="checkbox" id="vis-zoom"> Zoom al paso actual</label>
+  </div>
+  <svg id="vis-svg" viewBox="0 0 760 380" role="img" aria-label="Gráfico de f(x) con la construcción del método"></svg>
+  <div class="tip" id="vis-tip"></div>
+  <div class="explica" id="vis-txt"></div>
+  <div class="scroll"><table class="iters" id="vis-tabla"></table></div>
+</div>
+
 <!-- ===================================================== -->
 <h2 id="comparacion">4. Comparación rápida</h2>
 <table>
@@ -192,6 +258,27 @@ la posición falsa usa los dos que <strong>encierran</strong> la raíz.</p>
 <div class="ok"><strong>Conclusión típica para escribir:</strong> los métodos cerrados (bisección y posición falsa)
 son seguros pero necesitan más iteraciones; los abiertos (secante y Newton) convergen en muchas menos
 iteraciones, pero dependen de los puntos iniciales y pueden escaparse del intervalo o no converger.</div>
+
+<div class="viz" id="conv">
+  <h3>¿Qué tan rápido baja el error?</h3>
+  <p class="sub">Error relativo en cada iteración (escala logarítmica: cada línea de la grilla es 10 veces más chico).
+  El método termina cuando su línea cruza la <strong>tolerancia</strong>. Pasá el mouse para ver los valores.</p>
+  <div class="controls"><select id="conv-ej" aria-label="Ejercicio"></select></div>
+  <div class="legend" id="conv-leg"></div>
+  <svg id="conv-svg" viewBox="0 0 760 340" role="img" aria-label="Error relativo por iteración de cada método"></svg>
+  <div class="tip" id="conv-tip"></div>
+  <p class="sub" style="margin-top:8px">Fijate la forma: bisección baja como una <em>rampa</em> (lineal: siempre divide por 2);
+  Newton cae en <em>picada</em> (cuadrática: los dígitos correctos se duplican en cada paso); secante queda en el medio.</p>
+  <details><summary>Ver como tabla</summary><div class="scroll"><table id="conv-tabla"></table></div></details>
+</div>
+
+<div class="viz" id="bars">
+  <h3>Iteraciones necesarias en el ejercicio 5 (error 0.001 %)</h3>
+  <p class="sub">Menos es mejor. Las barras claras son corridas que convergieron, pero <strong>a una raíz fuera del intervalo</strong>.</p>
+  <div class="legend" id="bars-leg"></div>
+  <svg id="bars-svg" viewBox="0 0 760 470" role="img" aria-label="Iteraciones por método en cada caso del ejercicio 5"></svg>
+  <div class="tip" id="bars-tip"></div>
+</div>
 
 <!-- ===================================================== -->
 <h2 id="uso">5. Cómo usar el programa</h2>
@@ -320,5 +407,518 @@ Es un buen ejemplo para justificar por qué los métodos abiertos “no siempre 
 </ul>
 
 </main>
+
+<script>
+(() => {
+"use strict";
+const NS = "http://www.w3.org/2000/svg";
+function el(tag, attrs, parent) {
+  const e = document.createElementNS(NS, tag);
+  for (const k in attrs || {}) e.setAttribute(k, attrs[k]);
+  if (parent) parent.appendChild(e);
+  return e;
+}
+function txt(parent, x, y, s, attrs) {
+  const t = el("text", Object.assign({ x, y }, attrs || {}), parent);
+  t.textContent = s;
+  return t;
+}
+const $ = id => document.getElementById(id);
+
+/* ------------------------- ejercicios ------------------------- */
+const P1  = { f: x => x**3 - 7*x**2 + 14*x - 6, df: x => 3*x*x - 14*x + 14, tol: 1e-4, eq: "x³ − 7x² + 14x − 6" };
+const P5a = { f: x => (x-2)**2 - Math.log(x), df: x => 2*(x-2) - 1/x, tol: 1e-5, eq: "(x−2)² − ln x" };
+const P5b = { f: x => Math.sin(x) - Math.exp(-x), df: x => Math.cos(x) + Math.exp(-x), tol: 1e-5, eq: "sen x − e⁻ˣ" };
+const P5c = { f: x => 230*x**4 + 18*x**3 + 9*x**2 - 221*x - 9, df: x => 920*x**3 + 54*x**2 + 18*x - 221, tol: 1e-5, eq: "230x⁴ + 18x³ + 9x² − 221x − 9" };
+const EJ = [
+  Object.assign({ id: "1a",  t: "Ej. 1 · [0, 1]",    corto: "1 · [0, 1]",    a: 0,      b: 1   }, P1),
+  Object.assign({ id: "1b",  t: "Ej. 1 · [1, 3.2]",  corto: "1 · [1, 3.2]",  a: 1,      b: 3.2 }, P1),
+  Object.assign({ id: "1c",  t: "Ej. 1 · [3.2, 4]",  corto: "1 · [3.2, 4]",  a: 3.2,    b: 4   }, P1),
+  Object.assign({ id: "5a1", t: "Ej. 5a · [1, 2]",   corto: "5a · [1, 2]",   a: 1,      b: 2   }, P5a),
+  Object.assign({ id: "5a2", t: "Ej. 5a · [e, 4]",   corto: "5a · [e, 4]",   a: Math.E, b: 4   }, P5a),
+  Object.assign({ id: "5b1", t: "Ej. 5b · [0, 1]",   corto: "5b · [0, 1]",   a: 0,      b: 1   }, P5b),
+  Object.assign({ id: "5b2", t: "Ej. 5b · [3, 4]",   corto: "5b · [3, 4]",   a: 3,      b: 4   }, P5b),
+  Object.assign({ id: "5c1", t: "Ej. 5c · [−1, 0]",  corto: "5c · [−1, 0]",  a: -1,     b: 0   }, P5c),
+  Object.assign({ id: "5c2", t: "Ej. 5c · [0, 1] (¡ojo!)", corto: "5c · [0, 1]", a: 0, b: 1   }, P5c),
+];
+const MET = [
+  { id: "bis", n: "Bisección",      c: "var(--s1)" },
+  { id: "pf",  n: "Posición falsa", c: "var(--s2)" },
+  { id: "sec", n: "Secante",        c: "var(--s3)" },
+  { id: "new", n: "Newton",         c: "var(--s4)" },
+];
+
+/* ------------- metodos (mismos criterios que metodos.py) ------------- */
+const errRel = (nuevo, viejo) => nuevo !== 0 ? Math.abs((nuevo - viejo) / nuevo) : Math.abs(nuevo - viejo);
+
+function correr(e, met) {
+  const { f, df, tol } = e;
+  let a = e.a, b = e.b;
+  const rows = [];
+  const fin = (extra) => {
+    const r = Object.assign({ rows }, extra);
+    if (r.raiz !== undefined) r.fuera = r.raiz < Math.min(e.a, e.b) - 1e-12 || r.raiz > Math.max(e.a, e.b) + 1e-12;
+    return r;
+  };
+  if (met === "bis" || met === "pf") {
+    if (f(a) * f(b) > 0) return fin({ error: "f(a) y f(b) tienen el mismo signo" });
+    let pAnt = null;
+    for (let n = 1; n <= 200; n++) {
+      const p = met === "bis" ? (a + b) / 2 : b - f(b) * (b - a) / (f(b) - f(a));
+      const fp = f(p), er = pAnt === null ? NaN : errRel(p, pAnt);
+      const izq = f(a) * fp < 0;
+      rows.push({ n, a, b, fa: f(a), fb: f(b), p, fp, er, izq });
+      if (fp === 0 || er < tol) return fin({ raiz: p });
+      if (izq) b = p; else a = p;
+      pAnt = p;
+    }
+    return fin({ error: "no converge" });
+  }
+  if (met === "sec") {
+    let p0 = a, p1 = b;
+    for (let n = 1; n <= 200; n++) {
+      if (f(p1) === f(p0)) return fin({ error: "f(pₙ) = f(pₙ₋₁): división por cero" });
+      const p = p1 - f(p1) * (p1 - p0) / (f(p1) - f(p0));
+      const er = errRel(p, p1);
+      rows.push({ n, p0, p1, f0: f(p0), f1: f(p1), p, fp: f(p), er });
+      if (!isFinite(p)) return fin({ error: "diverge" });
+      if (f(p) === 0 || er < tol) return fin({ raiz: p });
+      p0 = p1; p1 = p;
+    }
+    return fin({ error: "no converge" });
+  }
+  let p0 = (a + b) / 2;
+  for (let n = 1; n <= 200; n++) {
+    const d = df(p0);
+    if (d === 0) return fin({ error: "f′(pₙ) = 0: división por cero" });
+    const p = p0 - f(p0) / d;
+    const er = errRel(p, p0);
+    rows.push({ n, p0, f0: f(p0), d, p, fp: f(p), er });
+    if (!isFinite(p)) return fin({ error: "diverge" });
+    if (f(p) === 0 || er < tol) return fin({ raiz: p });
+    p0 = p;
+  }
+  return fin({ error: "no converge" });
+}
+
+/* ------------------------- utilidades ------------------------- */
+const fmt = (v, d = 6) => !isFinite(v) ? "—" : (v !== 0 && Math.abs(v) < 1e-4) ? v.toExponential(2) : v.toFixed(d);
+const SUP = { "-": "⁻", "0": "⁰", "1": "¹", "2": "²", "3": "³", "4": "⁴", "5": "⁵", "6": "⁶", "7": "⁷", "8": "⁸", "9": "⁹" };
+const pot10 = k => k === 0 ? "1" : "10" + String(k).split("").map(c => SUP[c]).join("");
+
+function niceTicks(lo, hi, n) {
+  const step0 = (hi - lo) / (n || 6);
+  const mag = 10 ** Math.floor(Math.log10(step0));
+  const r = step0 / mag;
+  const step = (r < 1.5 ? 1 : r < 3 ? 2 : r < 7 ? 5 : 10) * mag;
+  const out = [];
+  for (let v = Math.ceil(lo / step) * step; v <= hi + step * 1e-9; v += step) out.push(+v.toPrecision(12));
+  return { out, step };
+}
+function fmtTick(v, step) {
+  if (Math.abs(v) < step / 2) return "0";
+  const d = Math.max(0, -Math.floor(Math.log10(step) + 1e-9));
+  return v.toFixed(Math.min(d, 10)).replace("-", "−");
+}
+
+let clipN = 0;
+/* Arma ejes, grilla y escalas de un grafico de funcion. */
+function marco(svg, W, H, m, xd, yd, opts) {
+  opts = opts || {};
+  svg.replaceChildren();
+  svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+  const pw = W - m.l - m.r, ph = H - m.t - m.b;
+  const sx = x => m.l + (x - xd[0]) / (xd[1] - xd[0]) * pw;
+  const sy = y => opts.log
+    ? m.t + ph - (Math.log10(y) - yd[0]) / (yd[1] - yd[0]) * ph
+    : m.t + ph - (y - yd[0]) / (yd[1] - yd[0]) * ph;
+  const inv = px => xd[0] + (px - m.l) / pw * (xd[1] - xd[0]);
+  el("rect", { x: 0, y: 0, width: W, height: H, style: "fill:var(--surface)" }, svg);
+  const grid = el("g", {}, svg);
+  if (opts.log) {
+    const span = yd[1] - yd[0], salto = span > 10 ? 2 : 1;
+    for (let k = Math.ceil(yd[0]); k <= yd[1]; k++) {
+      const y = m.t + ph - (k - yd[0]) / span * ph;
+      el("line", { x1: m.l, x2: W - m.r, y1: y, y2: y, style: "stroke:var(--grid);stroke-width:1" }, grid);
+      if ((k - Math.ceil(yd[0])) % salto === 0) txt(grid, m.l - 8, y + 4, pot10(k), { "text-anchor": "end", class: "tick" });
+    }
+  } else {
+    const yt = niceTicks(yd[0], yd[1], 5);
+    for (const v of yt.out) {
+      el("line", { x1: m.l, x2: W - m.r, y1: sy(v), y2: sy(v), style: "stroke:var(--grid);stroke-width:1" }, grid);
+      txt(grid, m.l - 8, sy(v) + 4, fmtTick(v, yt.step), { "text-anchor": "end", class: "tick" });
+    }
+    if (yd[0] < 0 && yd[1] > 0)
+      el("line", { x1: m.l, x2: W - m.r, y1: sy(0), y2: sy(0), style: "stroke:var(--fg);stroke-opacity:.55;stroke-width:1.25" }, grid);
+  }
+  const xt = opts.xTicks || niceTicks(xd[0], xd[1], 8);
+  for (const v of xt.out) {
+    if (v < xd[0] || v > xd[1]) continue;
+    txt(grid, sx(v), H - m.b + 18, opts.xFmt ? opts.xFmt(v) : fmtTick(v, xt.step), { "text-anchor": "middle", class: "tick" });
+  }
+  el("line", { x1: m.l, x2: W - m.r, y1: H - m.b, y2: H - m.b, style: "stroke:var(--axis);stroke-width:1" }, grid);
+  const id = "clip" + (++clipN);
+  const cp = el("clipPath", { id }, el("defs", {}, svg));
+  el("rect", { x: m.l, y: m.t, width: pw, height: ph }, cp);
+  const g = el("g", { "clip-path": `url(#${id})` }, svg);
+  const top = el("g", {}, svg);
+  return { sx, sy, inv, g, top, W, H, m, pw, ph };
+}
+
+function dominioY(f, xd, extra) {
+  let lo = Infinity, hi = -Infinity;
+  for (let i = 0; i <= 300; i++) {
+    const y = f(xd[0] + (xd[1] - xd[0]) * i / 300);
+    if (isFinite(y)) { lo = Math.min(lo, y); hi = Math.max(hi, y); }
+  }
+  for (const y of extra || []) if (isFinite(y)) { lo = Math.min(lo, y); hi = Math.max(hi, y); }
+  lo = Math.min(lo, 0); hi = Math.max(hi, 0);
+  const pad = (hi - lo || 1) * 0.08;
+  return [lo - pad, hi + pad];
+}
+
+function curva(F, f, xd, color) {
+  let d = "", pen = false;
+  for (let i = 0; i <= 600; i++) {
+    const x = xd[0] + (xd[1] - xd[0]) * i / 600, y = f(x);
+    if (!isFinite(y)) { pen = false; continue; }
+    const Y = Math.max(-5000, Math.min(5000, F.sy(y)));
+    d += (pen ? "L" : "M") + F.sx(x).toFixed(2) + "," + Y.toFixed(2);
+    pen = true;
+  }
+  el("path", { d, style: `fill:none;stroke:${color || "var(--fg)"};stroke-width:2;stroke-linejoin:round;stroke-linecap:round` }, F.g);
+}
+
+function punto(F, x, y, color, r, hueco) {
+  el("circle", { cx: F.sx(x), cy: F.sy(y), r: r || 4.5,
+    style: hueco ? `fill:var(--surface);stroke:${color};stroke-width:2`
+                 : `fill:${color};stroke:var(--surface);stroke-width:2` }, F.g);
+}
+function linea(F, x1, y1, x2, y2, color, w, op) {
+  el("line", { x1: F.sx(x1), y1: F.sy(y1), x2: F.sx(x2), y2: F.sy(y2),
+    style: `stroke:${color};stroke-width:${w || 2};stroke-linecap:round;stroke-opacity:${op || 1}` }, F.g);
+}
+function etiqueta(F, x, y, s, dy, anchor) {
+  const t = txt(F.top, F.sx(x), F.sy(y) + (dy || 0), s, { "text-anchor": anchor || "middle", class: "lbl" });
+  t.setAttribute("paint-order", "stroke");
+  t.setAttribute("style", "stroke:var(--surface);stroke-width:4px;stroke-linejoin:round");
+}
+
+/* Tooltip compartido: posicion relativa a la tarjeta .viz */
+function mostrarTip(tip, ev, nodos) {
+  tip.replaceChildren(...nodos);
+  tip.style.display = "block";
+  const box = tip.parentElement.getBoundingClientRect();
+  let x = ev.clientX - box.left + 14, y = ev.clientY - box.top + 14;
+  if (x + tip.offsetWidth > box.width - 4) x = ev.clientX - box.left - tip.offsetWidth - 14;
+  if (y + tip.offsetHeight > box.height - 4) y = ev.clientY - box.top - tip.offsetHeight - 14;
+  tip.style.left = x + "px"; tip.style.top = y + "px";
+}
+function filaTip(valor, nombre, color, swatch) {
+  const d = document.createElement("div"); d.className = "row";
+  if (color) { const k = document.createElement("span"); k.className = swatch ? "swatch" : "key"; k.style.background = color; d.appendChild(k); }
+  const b = document.createElement("b"); b.textContent = valor; d.appendChild(b);
+  if (nombre) { const s = document.createElement("span"); s.className = "dim"; s.textContent = nombre; d.appendChild(s); }
+  return d;
+}
+function svgX(svg, ev) {
+  const pt = svg.createSVGPoint(); pt.x = ev.clientX; pt.y = ev.clientY;
+  return pt.matrixTransform(svg.getScreenCTM().inverse());
+}
+/* Crosshair + lectura de f(x) en graficos de funcion */
+function hoverFuncion(svg, tip, getF, f) {
+  svg.onpointermove = ev => {
+    const F = getF(); if (!F) return;
+    const p = svgX(svg, ev);
+    let cross = svg.querySelector(".cross");
+    if (p.x < F.m.l || p.x > F.W - F.m.r) { tip.style.display = "none"; if (cross) cross.remove(); return; }
+    if (!cross) cross = el("line", { class: "cross", style: "stroke:var(--muted);stroke-width:1;stroke-opacity:.6;pointer-events:none" }, F.top);
+    cross.setAttribute("x1", p.x); cross.setAttribute("x2", p.x);
+    cross.setAttribute("y1", F.m.t); cross.setAttribute("y2", F.H - F.m.b);
+    const x = F.inv(p.x);
+    mostrarTip(tip, ev, [filaTip(fmt(f()(x)), "f(x)"), filaTip(fmt(x), "x")]);
+  };
+  svg.onpointerleave = () => { tip.style.display = "none"; const c = svg.querySelector(".cross"); if (c) c.remove(); };
+}
+
+/* ======================= 1) Bolzano / Ej. 1 ======================= */
+(function bolzano() {
+  const svg = $("bolz-svg"), xd = [-0.25, 4.25];
+  const F = marco(svg, 760, 300, { l: 48, r: 16, t: 26, b: 30 }, xd, dominioY(P1.f, xd));
+  const bandas = [[0, 1, "[0, 1]"], [1, 3.2, "[1, 3.2]"], [3.2, 4, "[3.2, 4]"]];
+  bandas.forEach(([a, b, s], i) => {
+    el("rect", { x: F.sx(a) + 1, y: F.m.t, width: F.sx(b) - F.sx(a) - 2, height: F.ph,
+      style: `fill:var(--s1);fill-opacity:${i % 2 ? .05 : .11}` }, F.g);
+    txt(F.top, (F.sx(a) + F.sx(b)) / 2, 16, s, { "text-anchor": "middle", class: "lbl" });
+  });
+  curva(F, P1.f, xd);
+  for (const r of [2 - Math.SQRT2, 3, 2 + Math.SQRT2]) {
+    punto(F, r, 0, "var(--s1)", 5);
+    etiqueta(F, r, 0, r.toFixed(4), 22);
+  }
+  hoverFuncion(svg, $("bolz-tip"), () => F, () => P1.f);
+})();
+
+/* ===================== 2) Visualizador paso a paso ===================== */
+(function visualizador() {
+  const svg = $("vis-svg"), tip = $("vis-tip"), selEj = $("vis-ej"), seg = $("vis-met");
+  const st = { ej: 0, met: 0, k: 0, F: null };
+  EJ.forEach((e, i) => { const o = document.createElement("option"); o.value = i; o.textContent = `${e.t} — f(x) = ${e.eq}`; selEj.appendChild(o); });
+  MET.forEach((m, i) => {
+    const b = document.createElement("button");
+    const k = document.createElement("span"); k.className = "key"; k.style.background = m.c;
+    b.append(k, document.createTextNode(m.n));
+    b.onclick = () => { st.met = i; st.k = 0; dibujar(); };
+    seg.appendChild(b);
+  });
+  selEj.onchange = () => { st.ej = +selEj.value; st.k = 0; dibujar(); };
+  $("vis-zoom").onchange = () => dibujar();
+  $("vis-ini").onclick = () => { st.k = 0; dibujar(); };
+  $("vis-ant").onclick = () => { st.k--; dibujar(); };
+  $("vis-sig").onclick = () => { st.k++; dibujar(); };
+  $("vis-fin").onclick = () => { st.k = 1e9; dibujar(); };
+  document.addEventListener("keydown", ev => {
+    if (ev.target.closest("input,select,textarea")) return;
+    const r = $("vis").getBoundingClientRect();
+    if (r.bottom < 0 || r.top > innerHeight) return;
+    if (ev.key === "ArrowRight") { st.k++; dibujar(); }
+    if (ev.key === "ArrowLeft") { st.k--; dibujar(); }
+  });
+
+  const xsPaso = (met, r) => met === "bis" || met === "pf" ? [r.a, r.b, r.p]
+    : met === "sec" ? [r.p0, r.p1, r.p] : [r.p0, r.p];
+
+  function dibujar() {
+    const e = EJ[st.ej], m = MET[st.met], R = correr(e, m.id), rows = R.rows;
+    [...seg.children].forEach((b, i) => b.setAttribute("aria-pressed", i === st.met));
+    const txtBox = $("vis-txt"), tabla = $("vis-tabla");
+    if (!rows.length) {
+      svg.replaceChildren(); txtBox.textContent = "No se puede aplicar: " + R.error; tabla.replaceChildren(); return;
+    }
+    st.k = Math.max(0, Math.min(st.k, rows.length - 1));
+    const k = st.k, r = rows[k], ultimo = k === rows.length - 1;
+    $("vis-ini").disabled = $("vis-ant").disabled = k === 0;
+    $("vis-sig").disabled = $("vis-fin").disabled = ultimo;
+
+    const zoom = $("vis-zoom").checked;
+    let xs = zoom ? xsPaso(m.id, r) : [e.a, e.b];
+    if (!zoom) for (let i = 0; i <= k; i++) xs.push(...xsPaso(m.id, rows[i]));
+    xs = xs.filter(isFinite);
+    const lo = Math.min(...xs), hi = Math.max(...xs);
+    const span = (hi - lo) || Math.abs(lo) * 0.1 || 1;
+    const pad = span * (zoom ? 0.3 : 0.06);
+    const xd = [lo - pad, hi + pad];
+    const ys = xsPaso(m.id, r).map(e.f);
+    const F = marco(svg, 760, 380, { l: 62, r: 16, t: 16, b: 32 }, xd, dominioY(e.f, xd, ys));
+    st.F = F;
+    const c = m.c;
+
+    // iteraciones anteriores como marcas sobre el eje
+    for (let i = 0; i < k; i++) {
+      const p = rows[i].p;
+      el("circle", { cx: F.sx(p), cy: F.sy(0), r: 3, style: "fill:var(--muted);fill-opacity:.55" }, F.g);
+    }
+    if (m.id === "bis" || m.id === "pf") {
+      el("rect", { x: F.sx(r.a), y: F.m.t, width: Math.max(1, F.sx(r.b) - F.sx(r.a)), height: F.ph,
+        style: `fill:${c};fill-opacity:.10` }, F.g);
+    }
+    curva(F, e.f, xd);
+    if (m.id === "bis" || m.id === "pf") {
+      if (m.id === "pf") linea(F, r.a, r.fa, r.b, r.fb, c);
+      linea(F, r.p, 0, r.p, r.fp, c, 1.5, .8);
+      punto(F, r.a, r.fa, c); punto(F, r.b, r.fb, c);
+      punto(F, r.p, r.fp, c, 4.5, true);
+      punto(F, r.p, 0, c, 5.5);
+      etiqueta(F, r.a, r.fa, "a", r.fa >= 0 ? -10 : 20);
+      etiqueta(F, r.b, r.fb, "b", r.fb >= 0 ? -10 : 20);
+      etiqueta(F, r.p, 0, "p", r.fp >= 0 ? 22 : -12);
+    } else if (m.id === "sec") {
+      const xl = Math.min(r.p0, r.p1, r.p), xr = Math.max(r.p0, r.p1, r.p);
+      const sl = (r.f1 - r.f0) / (r.p1 - r.p0);
+      linea(F, xl, r.f1 + sl * (xl - r.p1), xr, r.f1 + sl * (xr - r.p1), c);
+      linea(F, r.p, 0, r.p, r.fp, c, 1.5, .8);
+      punto(F, r.p0, r.f0, c); punto(F, r.p1, r.f1, c);
+      punto(F, r.p, r.fp, c, 4.5, true);
+      punto(F, r.p, 0, c, 5.5);
+      etiqueta(F, r.p0, r.f0, "pₙ₋₁", r.f0 >= 0 ? -10 : 20);
+      etiqueta(F, r.p1, r.f1, "pₙ", r.f1 >= 0 ? -10 : 20);
+      etiqueta(F, r.p, 0, "pₙ₊₁", r.fp >= 0 ? 22 : -12);
+    } else {
+      linea(F, r.p0, r.f0, r.p, 0, c);
+      linea(F, r.p0, 0, r.p0, r.f0, "var(--muted)", 1, .6);
+      linea(F, r.p, 0, r.p, r.fp, c, 1.5, .8);
+      punto(F, r.p0, r.f0, c);
+      punto(F, r.p, r.fp, c, 4.5, true);
+      punto(F, r.p, 0, c, 5.5);
+      etiqueta(F, r.p0, r.f0, "pₙ", r.f0 >= 0 ? -10 : 20);
+      etiqueta(F, r.p, 0, "pₙ₊₁", r.fp >= 0 ? 22 : -12);
+    }
+
+    // explicacion del paso
+    const n6 = v => fmt(v, 6);
+    let h = `<span class="paso">Iteración ${r.n} de ${rows.length}</span> · tolerancia ${e.tol === 1e-4 ? "10⁻⁴" : "10⁻⁵ (= 0.001 %)"}<br>`;
+    if (m.id === "bis") h += `p = (a + b) / 2 = (${n6(r.a)} + ${n6(r.b)}) / 2 = <b>${n6(r.p)}</b><br>`;
+    if (m.id === "pf") h += `p = b − f(b)·(b − a) / (f(b) − f(a)) = <b>${n6(r.p)}</b> &nbsp;← donde la cuerda corta al eje<br>`;
+    if (m.id === "sec") h += `pₙ₊₁ = pₙ − f(pₙ)·(pₙ − pₙ₋₁) / (f(pₙ) − f(pₙ₋₁)) = <b>${n6(r.p)}</b> &nbsp;← donde la secante corta al eje<br>`;
+    if (m.id === "new") h += `pₙ₊₁ = pₙ − f(pₙ) / f′(pₙ) = ${n6(r.p0)} − (${fmt(r.f0)}) / (${fmt(r.d)}) = <b>${n6(r.p)}</b> &nbsp;← donde la tangente corta al eje<br>`;
+    if (m.id === "bis" || m.id === "pf")
+      h += `f(p) = ${fmt(r.fp)} · f(a)·f(p) ${r.izq ? "&lt; 0 → la raíz está en <b>[a, p]</b>: b = p" : "&gt; 0 → la raíz está en <b>[p, b]</b>: a = p"}<br>`;
+    else h += `f(pₙ₊₁) = ${fmt(r.fp)}<br>`;
+    if (isNaN(r.er)) h += `Error: todavía no hay (es la primera aproximación, no hay una anterior para comparar) → sigue`;
+    else {
+      const ant = m.id === "bis" || m.id === "pf" ? rows[k - 1].p : r.p0 !== undefined && m.id === "new" ? r.p0 : r.p1;
+      h += `Error relativo = |nuevo − anterior| / |nuevo| = |${n6(r.p)} − ${n6(ant)}| / |${n6(r.p)}| = <b>${fmt(r.er)}</b> `;
+      h += r.er < e.tol || r.fp === 0 ? `<span class="stop">&lt; tolerancia → ¡TERMINA! Raíz ≈ ${n6(r.p)}</span>` : `≥ tolerancia → sigue`;
+    }
+    if (ultimo && R.fuera) h += `<br><b>⚠ Convergió a ${n6(R.raiz)}, que está FUERA del intervalo [${fmt(e.a, 4)}, ${fmt(e.b, 4)}].</b> El método abierto se escapó a otra raíz: hay que elegir mejores puntos iniciales.`;
+    if (ultimo && R.error) h += `<br><b>⚠ ${R.error}</b>`;
+    txtBox.innerHTML = h;
+
+    // tabla de iteraciones hasta el paso actual
+    const cols = m.id === "bis" || m.id === "pf"
+      ? [["n", r => r.n], ["a", r => n6(r.a)], ["b", r => n6(r.b)], ["p", r => n6(r.p)], ["f(p)", r => fmt(r.fp)], ["error", r => fmt(r.er)]]
+      : m.id === "sec"
+      ? [["n", r => r.n], ["pₙ₋₁", r => n6(r.p0)], ["pₙ", r => n6(r.p1)], ["pₙ₊₁", r => n6(r.p)], ["f(pₙ₊₁)", r => fmt(r.fp)], ["error", r => fmt(r.er)]]
+      : [["n", r => r.n], ["pₙ", r => n6(r.p0)], ["f′(pₙ)", r => fmt(r.d)], ["pₙ₊₁", r => n6(r.p)], ["f(pₙ₊₁)", r => fmt(r.fp)], ["error", r => fmt(r.er)]];
+    tabla.replaceChildren();
+    const trh = tabla.insertRow();
+    for (const [nombre] of cols) { const th = document.createElement("th"); th.className = "n"; th.textContent = nombre; trh.appendChild(th); }
+    for (let i = 0; i <= k; i++) {
+      const tr = tabla.insertRow(); if (i === k) tr.className = "actual";
+      for (const [, g] of cols) { const td = tr.insertCell(); td.className = "n"; td.textContent = g(rows[i]); }
+    }
+    const sc = tabla.parentElement; sc.scrollTop = sc.scrollHeight;
+  }
+  hoverFuncion(svg, tip, () => st.F, () => EJ[st.ej].f);
+  dibujar();
+})();
+
+/* ===================== 3) Convergencia del error ===================== */
+(function convergencia() {
+  const svg = $("conv-svg"), tip = $("conv-tip"), sel = $("conv-ej");
+  EJ.forEach((e, i) => { const o = document.createElement("option"); o.value = i; o.textContent = `${e.t} — f(x) = ${e.eq}`; sel.appendChild(o); });
+  sel.value = 5;
+  const leg = $("conv-leg");
+  for (const m of MET) {
+    const s = document.createElement("span"), k = document.createElement("span");
+    k.className = "key"; k.style.background = m.c; s.append(k, document.createTextNode(m.n)); leg.appendChild(s);
+  }
+  let estado = null;
+  function dibujar() {
+    const e = EJ[+sel.value];
+    const series = MET.map(m => {
+      const R = correr(e, m.id);
+      return { m, R, pts: R.rows.filter(r => isFinite(r.er)).map(r => ({ n: r.n, er: Math.max(r.er, 1e-17) })) };
+    });
+    const todos = series.flatMap(s => s.pts);
+    const maxN = Math.max(2, ...series.map(s => s.R.rows.length));
+    const ylo = Math.floor(Math.log10(Math.min(e.tol, ...todos.map(p => p.er)))) - 0.3;
+    const yhi = Math.ceil(Math.log10(Math.max(...todos.map(p => p.er)))) + 0.2;
+    const xd = [0.5, maxN + 0.5];
+    const xt = niceTicks(1, maxN, Math.min(maxN, 12));
+    xt.out = xt.out.filter(v => Number.isInteger(v));
+    const F = marco(svg, 760, 340, { l: 52, r: 104, t: 14, b: 40 }, xd, [ylo, yhi], { log: true, xTicks: xt, xFmt: v => String(v) });
+    txt(F.top, F.m.l + F.pw / 2, F.H - 4, "iteración", { "text-anchor": "middle" });
+    const yTol = F.sy(e.tol);
+    el("line", { x1: F.m.l, x2: F.W - F.m.r, y1: yTol, y2: yTol, style: "stroke:var(--fg);stroke-opacity:.6;stroke-width:1" }, F.g);
+    txt(F.top, F.m.l + 6, yTol - 6, "tolerancia " + pot10(Math.round(Math.log10(e.tol))), { class: "lbl" });
+    const usadas = [{ x: F.m.l + 6, y: yTol - 6, w: 110 }];
+    for (const s of series) {
+      if (!s.pts.length) continue;
+      const d = s.pts.map((p, i) => (i ? "L" : "M") + F.sx(p.n).toFixed(2) + "," + F.sy(p.er).toFixed(2)).join("");
+      el("path", { d, style: `fill:none;stroke:${s.m.c};stroke-width:2;stroke-linejoin:round;stroke-linecap:round` }, F.g);
+      for (const p of s.pts) el("circle", { cx: F.sx(p.n), cy: F.sy(p.er), r: 4, style: `fill:${s.m.c};stroke:var(--surface);stroke-width:2` }, F.g);
+      // etiqueta directa al final, salvo que choque con otra
+      const u = s.pts[s.pts.length - 1], ly = F.sy(u.er) + 4, lx = F.sx(u.n) + 9;
+      const s_ = `${s.m.n} (${s.R.rows.length})`, w = s_.length * 7;
+      const choca = usadas.some(o => Math.abs(o.y - ly) < 14 && lx < o.x + o.w && o.x < lx + w);
+      if (!choca) {
+        const t = txt(F.top, lx, ly, s_, { class: "lbl" });
+        t.setAttribute("paint-order", "stroke"); t.setAttribute("style", "stroke:var(--surface);stroke-width:4px");
+        usadas.push({ x: lx, y: ly, w });
+      }
+    }
+    estado = { F, series, maxN, e };
+    // tabla
+    const tabla = $("conv-tabla"); tabla.replaceChildren();
+    const h = tabla.insertRow();
+    for (const s of ["n", ...MET.map(m => m.n)]) { const th = document.createElement("th"); th.className = "n"; th.textContent = s; h.appendChild(th); }
+    for (let n = 1; n <= maxN; n++) {
+      const tr = tabla.insertRow(); tr.insertCell().textContent = n;
+      for (const s of series) { const r = s.R.rows[n - 1]; const td = tr.insertCell(); td.className = "n"; td.textContent = r ? fmt(r.er) : ""; }
+      tr.cells[0].className = "n";
+    }
+  }
+  svg.onpointermove = ev => {
+    if (!estado) return;
+    const { F, series, maxN } = estado, p = svgX(svg, ev);
+    if (p.x < F.m.l || p.x > F.W - F.m.r) return svg.onpointerleave();
+    const n = Math.max(1, Math.min(maxN, Math.round(F.inv(p.x))));
+    let cross = svg.querySelector(".cross");
+    if (!cross) cross = el("line", { class: "cross", style: "stroke:var(--muted);stroke-width:1;stroke-opacity:.6;pointer-events:none" }, F.top);
+    cross.setAttribute("x1", F.sx(n)); cross.setAttribute("x2", F.sx(n));
+    cross.setAttribute("y1", F.m.t); cross.setAttribute("y2", F.H - F.m.b);
+    const filas = [filaTip(`Iteración ${n}`)];
+    for (const s of series) {
+      const r = s.R.rows[n - 1];
+      const v = !r ? `terminó en ${s.R.rows.length}` : isNaN(r.er) ? "sin error aún" : fmt(r.er);
+      filas.push(filaTip(v, s.m.n + (r && n === s.R.rows.length && s.R.fuera ? " (fuera del intervalo)" : ""), s.m.c));
+    }
+    mostrarTip(tip, ev, filas);
+  };
+  svg.onpointerleave = () => { tip.style.display = "none"; const c = svg.querySelector(".cross"); if (c) c.remove(); };
+  sel.onchange = dibujar;
+  dibujar();
+})();
+
+/* ===================== 4) Iteraciones del Ej. 5 ===================== */
+(function barras() {
+  const svg = $("bars-svg"), tip = $("bars-tip"), leg = $("bars-leg");
+  for (const m of MET) {
+    const s = document.createElement("span"), k = document.createElement("span");
+    k.className = "swatch"; k.style.background = m.c; s.append(k, document.createTextNode(m.n)); leg.appendChild(s);
+  }
+  const casos = EJ.filter(e => e.id.startsWith("5"));
+  const datos = casos.map(e => ({ e, res: MET.map(m => ({ m, R: correr(e, m.id) })) }));
+  const BH = 11, GAP = 2, GP = 20, m = { l: 96, r: 150, t: 8, b: 30 };
+  const gh = MET.length * (BH + GAP) - GAP;
+  const H = m.t + m.b + casos.length * (gh + GP) - GP;
+  const maxIt = Math.max(...datos.flatMap(d => d.res.map(x => x.R.rows.length)));
+  const xd = [0, Math.ceil(maxIt / 5) * 5];
+  svg.replaceChildren(); svg.setAttribute("viewBox", `0 0 760 ${H}`);
+  el("rect", { x: 0, y: 0, width: 760, height: H, style: "fill:var(--surface)" }, svg);
+  const pw = 760 - m.l - m.r, sx = v => m.l + v / xd[1] * pw;
+  for (let v = 0; v <= xd[1]; v += 5) {
+    el("line", { x1: sx(v), x2: sx(v), y1: m.t, y2: H - m.b, style: `stroke:${v ? "var(--grid)" : "var(--axis)"};stroke-width:1` }, svg);
+    txt(svg, sx(v), H - m.b + 18, String(v), { "text-anchor": "middle", class: "tick" });
+  }
+  txt(svg, m.l + pw / 2, H - 2, "iteraciones", { "text-anchor": "middle" });
+  datos.forEach((d, gi) => {
+    const y0 = m.t + gi * (gh + GP);
+    txt(svg, m.l - 10, y0 + gh / 2 + 4, d.e.corto, { "text-anchor": "end", class: "lbl" });
+    d.res.forEach(({ m: met, R }, bi) => {
+      const y = y0 + bi * (BH + GAP), n = R.rows.length, w = Math.max(2, sx(n) - sx(0)), x = sx(0), r = Math.min(4, w);
+      const path = `M${x},${y}H${x + w - r}Q${x + w},${y} ${x + w},${y + r}V${y + BH - r}Q${x + w},${y + BH} ${x + w - r},${y + BH}H${x}Z`;
+      el("path", { d: path, style: `fill:${met.c};fill-opacity:${R.fuera ? .3 : 1}` }, svg);
+      const lbl = R.error ? R.error : R.fuera ? `${n} · se fue a ${fmt(R.raiz, 4)}` : String(n);
+      txt(svg, x + w + 6, y + BH - 1, lbl, { class: "tick" });
+      const hit = el("rect", { x: m.l, y: y - GAP / 2, width: pw + m.r, height: BH + GAP, style: "fill:transparent;cursor:default", tabindex: 0 }, svg);
+      const nodos = () => [
+        filaTip(`${n} iteraciones`, met.n, met.c, true),
+        filaTip(R.raiz !== undefined ? fmt(R.raiz, 7) : "—", "raíz"),
+        ...(R.fuera ? [filaTip("fuera del intervalo", d.e.corto)] : []),
+      ];
+      hit.addEventListener("pointermove", ev => mostrarTip(tip, ev, nodos()));
+      hit.addEventListener("pointerleave", () => { tip.style.display = "none"; });
+      hit.addEventListener("focus", () => {
+        const b = hit.getBoundingClientRect();
+        mostrarTip(tip, { clientX: b.left + 200, clientY: b.top }, nodos());
+      });
+      hit.addEventListener("blur", () => { tip.style.display = "none"; });
+    });
+  });
+})();
+})();
+</script>
 </body>
 </html>
