@@ -1,0 +1,324 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TP5 · Guía de estudio — Raíces de ecuaciones</title>
+<style>
+  :root {
+    --bg: #fafaf8; --fg: #1b1b1b; --muted: #5d5c58; --line: #dddcd5;
+    --card: #ffffff; --accent: #2a6fc9; --warn-bg: #fdf1d6; --warn: #6b4a00;
+    --ok-bg: #e3f4ec; --ok: #145c40; --code: #f1f0eb;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #121212; --fg: #ecebe7; --muted: #a9a8a2; --line: #2e2e2b;
+      --card: #1b1b1a; --accent: #6aa5f0; --warn-bg: #3a2c0a; --warn: #f3cf7a;
+      --ok-bg: #12392a; --ok: #9fe0c3; --code: #26261f;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--fg);
+         font: 16px/1.6 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width: 900px; margin: 0 auto; padding: 24px 20px 80px; }
+  h1 { font-size: 1.8rem; margin: 0 0 4px; }
+  h2 { margin-top: 48px; padding-bottom: 6px; border-bottom: 2px solid var(--line); }
+  h3 { margin-top: 28px; }
+  .sub { color: var(--muted); margin: 0 0 20px; }
+  nav { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 12px 18px; }
+  nav ol { margin: 0; padding-left: 20px; columns: 2; }
+  a { color: var(--accent); }
+  code, pre { font-family: ui-monospace, "JetBrains Mono", Menlo, monospace; font-size: .9em; }
+  code { background: var(--code); padding: 1px 5px; border-radius: 4px; }
+  pre { background: var(--code); padding: 12px 14px; border-radius: 8px; overflow-x: auto; line-height: 1.45; }
+  pre code { background: none; padding: 0; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 4px 18px 12px; margin: 16px 0; }
+  .formula { font-family: "Cambria Math", "STIX Two Math", Georgia, serif; font-size: 1.15rem;
+             text-align: center; padding: 10px; background: var(--code); border-radius: 8px; margin: 10px 0; }
+  .warn { background: var(--warn-bg); color: var(--warn); border-radius: 8px; padding: 10px 14px; margin: 14px 0; }
+  .ok { background: var(--ok-bg); color: var(--ok); border-radius: 8px; padding: 10px 14px; margin: 14px 0; }
+  table { border-collapse: collapse; width: 100%; margin: 10px 0 18px; font-size: .92rem; }
+  th, td { border-bottom: 1px solid var(--line); padding: 6px 8px; text-align: left; }
+  th { background: var(--code); }
+  td.n, th.n { text-align: right; font-variant-numeric: tabular-nums; font-family: ui-monospace, monospace; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  @media (max-width: 700px) { .grid { grid-template-columns: 1fr; } nav ol { columns: 1; } }
+  .pill { display: inline-block; font-size: .78rem; padding: 1px 8px; border-radius: 99px;
+          background: var(--code); color: var(--muted); margin-left: 6px; vertical-align: middle; }
+  ul.check li { list-style: "☐  "; }
+  details { margin: 8px 0; }
+  summary { cursor: pointer; font-weight: 600; }
+</style>
+</head>
+<body>
+<main>
+
+<h1>Raíces de ecuaciones — guía para el parcial</h1>
+<p class="sub">TP5 · Bisección, Posición falsa, Secante y Newton · con <code>metodos.py</code> y <code>guia.py</code></p>
+
+<nav>
+  <strong>Contenido</strong>
+  <ol>
+    <li><a href="#idea">La idea general</a></li>
+    <li><a href="#errores">Tipos de error y tolerancia</a></li>
+    <li><a href="#metodos">Los 4 métodos</a></li>
+    <li><a href="#comparacion">Comparación rápida</a></li>
+    <li><a href="#uso">Cómo usar el programa</a></li>
+    <li><a href="#resultados">Resultados del TP</a></li>
+    <li><a href="#trampas">Trampas típicas</a></li>
+    <li><a href="#checklist">Checklist del día del parcial</a></li>
+  </ol>
+</nav>
+
+<!-- ===================================================== -->
+<h2 id="idea">1. La idea general</h2>
+<p>Queremos encontrar <strong>x</strong> tal que <strong>f(x) = 0</strong> (una <em>raíz</em>).
+Como en general no se puede despejar, usamos un <strong>método iterativo</strong>: arrancamos con
+una aproximación y la vamos mejorando, paso a paso, hasta que el cambio entre una aproximación y
+la siguiente sea más chico que la <strong>tolerancia</strong> pedida.</p>
+
+<div class="card">
+  <p><strong>Si el enunciado pide una raíz de un número</strong>, se transforma en una ecuación:</p>
+  <ul>
+    <li>√3 → buscar la raíz de <code>f(x) = x² − 3</code> (está entre 1 y 2)</li>
+    <li>∛25 → buscar la raíz de <code>f(x) = x³ − 25</code> (está entre 2 y 3, porque 2³=8 y 3³=27)</li>
+    <li>En general, <sup>n</sup>√a → <code>f(x) = xⁿ − a</code></li>
+  </ul>
+</div>
+
+<div class="card">
+  <p><strong>Teorema de Bolzano</strong> (la base de los métodos cerrados): si f es continua en [a, b] y
+  <strong>f(a)·f(b) &lt; 0</strong> (cambia de signo), entonces hay al menos una raíz en (a, b).</p>
+  <p>Por eso Bisección y Posición falsa <em>exigen</em> que f(a) y f(b) tengan signos opuestos.</p>
+</div>
+
+<!-- ===================================================== -->
+<h2 id="errores">2. Tipos de error y tolerancia</h2>
+<p>Como no conocemos la raíz exacta, medimos el error comparando la aproximación nueva
+<em>p<sub>n</sub></em> con la anterior <em>p<sub>n−1</sub></em>:</p>
+
+<table>
+  <tr><th>Tipo</th><th>Fórmula</th><th>Ejemplo de enunciado</th><th>Qué poner en el programa</th></tr>
+  <tr><td>Absoluto</td><td>|p<sub>n</sub> − p<sub>n−1</sub>|</td><td>“error menor a 10⁻⁴”</td><td>— (no lo pide la guía)</td></tr>
+  <tr><td><strong>Relativo</strong></td><td>|p<sub>n</sub> − p<sub>n−1</sub>| / |p<sub>n</sub>|</td><td>“error relativo de 10⁻⁴”</td><td><code>TOL = 1e-4</code>, <code>"relativo"</code></td></tr>
+  <tr><td><strong>Porcentual</strong></td><td>relativo × 100 %</td><td>“error porcentual de 0.01%”</td><td><code>TOL = 0.01</code>, <code>"porcentual"</code></td></tr>
+</table>
+
+<div class="warn"><strong>Equivalencias clave:</strong> 0.01 % = 10⁻⁴ relativo · 0.001 % = 10⁻⁵ relativo.
+El porcentual es el relativo multiplicado por 100.</div>
+
+<p>Se para cuando <strong>error &lt; tolerancia</strong>. La raíz que se informa es la última
+aproximación calculada.</p>
+
+<!-- ===================================================== -->
+<h2 id="metodos">3. Los 4 métodos</h2>
+
+<div class="card">
+<h3>Bisección <span class="pill">cerrado</span><span class="pill">convergencia lineal</span></h3>
+<p><strong>Idea:</strong> partir el intervalo a la mitad y quedarse con la mitad donde f cambia de signo.</p>
+<div class="formula">p = (a + b) / 2</div>
+<ol>
+  <li>Verificar f(a)·f(b) &lt; 0.</li>
+  <li>Calcular p = (a+b)/2.</li>
+  <li>Si f(a)·f(p) &lt; 0 → la raíz está en [a, p] → <code>b = p</code>. Si no → <code>a = p</code>.</li>
+  <li>Repetir hasta que el error sea menor a la tolerancia.</li>
+</ol>
+<div class="grid">
+  <div class="ok"><strong>A favor:</strong> siempre converge si hay cambio de signo. Muy predecible: el intervalo se divide por 2 en cada paso.</div>
+  <div class="warn"><strong>En contra:</strong> es el más lento (≈ 3.3 iteraciones por cada dígito correcto). No usa la forma de f, solo su signo.</div>
+</div>
+</div>
+
+<div class="card">
+<h3>Posición falsa (Regla falsa) <span class="pill">cerrado</span><span class="pill">lineal</span></h3>
+<p><strong>Idea:</strong> igual que bisección, pero en vez del punto medio usa el punto donde la
+<em>recta</em> que une (a, f(a)) y (b, f(b)) corta al eje x.</p>
+<div class="formula">p = b − f(b) · (b − a) / (f(b) − f(a))</div>
+<p>La elección del subintervalo es igual que en bisección (mira el signo de f(a)·f(p)).</p>
+<div class="grid">
+  <div class="ok"><strong>A favor:</strong> siempre converge (como bisección) y casi siempre más rápido, porque tiene en cuenta los valores de f.</div>
+  <div class="warn"><strong>En contra:</strong> si la función es muy curva, uno de los extremos queda “clavado” y avanza lento (se ve en el ej. 1a: <code>a</code> queda fijo en 0).</div>
+</div>
+</div>
+
+<div class="card">
+<h3>Secante <span class="pill">abierto</span><span class="pill">superlineal ≈ 1.618</span></h3>
+<p><strong>Idea:</strong> como Newton, pero reemplaza la derivada por la pendiente de la recta
+entre los <em>dos últimos puntos</em>. No necesita cambio de signo ni derivada.</p>
+<div class="formula">p<sub>n+1</sub> = p<sub>n</sub> − f(p<sub>n</sub>) · (p<sub>n</sub> − p<sub>n−1</sub>) / (f(p<sub>n</sub>) − f(p<sub>n−1</sub>))</div>
+<p>Necesita dos puntos iniciales p₀ y p₁ (en el programa: los extremos del intervalo).</p>
+<div class="grid">
+  <div class="ok"><strong>A favor:</strong> rápido, sin derivada. Una sola evaluación nueva de f por paso.</div>
+  <div class="warn"><strong>En contra:</strong> no garantiza convergencia; se puede escapar del intervalo (ej. 5c en [0,1]). Falla si f(p<sub>n</sub>) = f(p<sub>n−1</sub>).</div>
+</div>
+<p><em>Diferencia con Posición falsa:</em> la secante siempre usa los dos <strong>últimos</strong> puntos;
+la posición falsa usa los dos que <strong>encierran</strong> la raíz.</p>
+</div>
+
+<div class="card">
+<h3>Newton-Raphson <span class="pill">abierto</span><span class="pill">convergencia cuadrática</span></h3>
+<p><strong>Idea:</strong> trazar la <em>recta tangente</em> en p<sub>n</sub> y tomar dónde corta al eje x.</p>
+<div class="formula">p<sub>n+1</sub> = p<sub>n</sub> − f(p<sub>n</sub>) / f′(p<sub>n</sub>)</div>
+<p>Necesita la derivada f′(x) y un solo punto inicial p₀ (en el programa: el punto medio del intervalo).</p>
+<div class="grid">
+  <div class="ok"><strong>A favor:</strong> el más rápido: cerca de la raíz, la cantidad de dígitos correctos se duplica en cada paso.</div>
+  <div class="warn"><strong>En contra:</strong> necesita f′. Si f′(p) ≈ 0 la tangente es casi horizontal y salta lejos (ej. 1b desde 3.2, ej. 5c desde 0.5). Depende mucho de p₀.</div>
+</div>
+<details>
+  <summary>Derivadas usadas en el TP</summary>
+  <table>
+    <tr><th>f(x)</th><th>f′(x)</th></tr>
+    <tr><td>x³ − 7x² + 14x − 6</td><td>3x² − 14x + 14</td></tr>
+    <tr><td>x³ − 25</td><td>3x²</td></tr>
+    <tr><td>(x−2)² − ln x</td><td>2(x−2) − 1/x</td></tr>
+    <tr><td>sen x − e<sup>−x</sup></td><td>cos x + e<sup>−x</sup></td></tr>
+    <tr><td>230x⁴ + 18x³ + 9x² − 221x − 9</td><td>920x³ + 54x² + 18x − 221</td></tr>
+  </table>
+  <p>Recordatorios: (xⁿ)′ = n·xⁿ⁻¹ · (ln x)′ = 1/x · (eˣ)′ = eˣ · (e<sup>−x</sup>)′ = −e<sup>−x</sup> ·
+  (sen x)′ = cos x · (cos x)′ = −sen x · (a<sup>x</sup>)′ = a<sup>x</sup>·ln a.</p>
+  <p>Igual, si dejás <code>DF = None</code>, el programa calcula la derivada numéricamente.</p>
+</details>
+</div>
+
+<!-- ===================================================== -->
+<h2 id="comparacion">4. Comparación rápida</h2>
+<table>
+  <tr><th>Método</th><th>Tipo</th><th>Necesita</th><th>¿Converge siempre?</th><th>Velocidad</th></tr>
+  <tr><td>Bisección</td><td>Cerrado</td><td>[a,b] con cambio de signo</td><td>Sí</td><td>Lenta (lineal, factor ½)</td></tr>
+  <tr><td>Posición falsa</td><td>Cerrado</td><td>[a,b] con cambio de signo</td><td>Sí</td><td>Lineal (en general mejor que bisección)</td></tr>
+  <tr><td>Secante</td><td>Abierto</td><td>2 puntos iniciales</td><td>No</td><td>Superlineal (≈1.618)</td></tr>
+  <tr><td>Newton</td><td>Abierto</td><td>1 punto + derivada</td><td>No</td><td>Cuadrática (la más rápida)</td></tr>
+</table>
+<div class="ok"><strong>Conclusión típica para escribir:</strong> los métodos cerrados (bisección y posición falsa)
+son seguros pero necesitan más iteraciones; los abiertos (secante y Newton) convergen en muchas menos
+iteraciones, pero dependen de los puntos iniciales y pueden escaparse del intervalo o no converger.</div>
+
+<!-- ===================================================== -->
+<h2 id="uso">5. Cómo usar el programa</h2>
+
+<h3>Opción A: ejercicio nuevo → <code>metodos.py</code></h3>
+<p>Abrís <code>metodos.py</code>, cambiás <strong>solo</strong> este bloque y corrés <code>python3 metodos.py</code>:</p>
+<pre><code># ============================ CONFIGURACION ============================
+F = "x^3 - 7x^2 + 14x - 6"       # la ecuacion, copiada del enunciado
+DF = None                         # derivada para Newton; None = automatica
+INTERVALOS = [(0, 1), (1, 3.2), (3.2, 4)]
+TOL = 1e-4
+TIPO_ERROR = "relativo"           # "relativo" o "porcentual"
+METODOS = ["biseccion", "posicion_falsa", "secante", "newton"]
+X0_NEWTON = None                  # None = punto medio de cada intervalo
+VER_ITERACIONES = True</code></pre>
+
+<p>La ecuación se escribe casi como en la hoja:</p>
+<table>
+  <tr><th>En el enunciado</th><th>Se puede escribir</th></tr>
+  <tr><td>x³, 2⁻ˣ</td><td><code>x^3</code>, <code>2^(-x)</code></td></tr>
+  <tr><td>2x · cos(2x)</td><td><code>2x cos(2x)</code> o <code>2x.Cos(2x)</code></td></tr>
+  <tr><td>ln x, sen x</td><td><code>ln x</code>, <code>sen x</code> (o con paréntesis)</td></tr>
+  <tr><td>eˣ, e⁻ˣ</td><td><code>e^x</code>, <code>e^(-x)</code> o <code>exp(-x)</code></td></tr>
+  <tr><td>intervalo [e, 4], [−π, 0]</td><td><code>("e", 4)</code>, <code>("-pi", 0)</code></td></tr>
+  <tr><td>3,2 (coma decimal)</td><td><code>3.2</code> (en la ecuación también acepta <code>3,2</code>)</td></tr>
+</table>
+<div class="warn">Siempre poné <strong>exponentes negativos o compuestos entre paréntesis</strong>:
+<code>e^(-x)</code>, no <code>e^-x</code>. Y <code>(x+1)^2</code>, no <code>x+1^2</code>.</div>
+
+<h3>Ejemplos de configuración</h3>
+<details><summary>“√3 con secante y error porcentual 0.01%”</summary>
+<pre><code>F = "x^2 - 3"
+INTERVALOS = [(1, 2)]
+TOL = 0.01
+TIPO_ERROR = "porcentual"
+METODOS = ["secante"]</code></pre></details>
+<details><summary>“∛25 con Newton y error relativo 10⁻⁴”</summary>
+<pre><code>F = "x^3 - 25"
+DF = "3x^2"
+INTERVALOS = [(2, 3)]
+TOL = 1e-4
+TIPO_ERROR = "relativo"
+METODOS = ["newton"]
+X0_NEWTON = 3</code></pre></details>
+<details><summary>“Los 4 métodos, error 0.001%, dos intervalos”</summary>
+<pre><code>F = "sen x - e^(-x)"
+INTERVALOS = [(0, 1), (3, 4)]
+TOL = 0.001
+TIPO_ERROR = "porcentual"
+METODOS = ["biseccion", "posicion_falsa", "secante", "newton"]</code></pre></details>
+
+<h3>Qué imprime</h3>
+<ol>
+  <li>Para cada intervalo y método, la <strong>tabla de iteraciones</strong> (n, a, b, p, f(p), error).</li>
+  <li>Al final, la <strong>tabla comparativa</strong>: raíz, iteraciones, error final y f(raíz) de cada método.
+      En la columna <code>Obs.</code> avisa si algo falló o si la raíz quedó <code>FUERA DEL INTERVALO</code>.</li>
+</ol>
+
+<h3>Opción B: el TP ya resuelto → <code>guia.py</code></h3>
+<pre><code>python3 guia.py            # todo, con iteraciones
+python3 guia.py resumen    # solo las tablas comparativas</code></pre>
+
+<!-- ===================================================== -->
+<h2 id="resultados">6. Resultados del TP (para comparar)</h2>
+<p>Iteraciones hasta cumplir la tolerancia. Secante arranca con p₀ = a, p₁ = b; Newton con p₀ = punto medio.</p>
+
+<h3>Ej. 1 — x³ − 7x² + 14x − 6 = 0 · relativo 10⁻⁴</h3>
+<p>Raíces exactas: 2 − √2 ≈ 0.585786, 3 y 2 + √2 ≈ 3.414214, porque f(x) = (x − 3)(x² − 4x + 2).</p>
+<table>
+  <tr><th>Intervalo</th><th>Bisección</th><th>Secante</th><th>Newton</th></tr>
+  <tr><td>[0, 1]</td><td class="n">0.585785 (15)</td><td class="n">0.585786 (6)</td><td class="n">0.585786 (3)</td></tr>
+  <tr><td>[1, 3.2]</td><td class="n">2.999927 (13)</td><td class="n">3.000001 (6)</td><td class="n">3.000000 (4)</td></tr>
+  <tr><td>[3.2, 4]</td><td class="n">3.414258 (12)</td><td class="n">3.414214 (9)</td><td class="n">3.414214 (4)</td></tr>
+</table>
+
+<h3>Ej. 2 — relativo 10⁻⁴</h3>
+<table>
+  <tr><th>Ecuación</th><th>Intervalo</th><th>Bisección</th><th>Secante</th></tr>
+  <tr><td>a) x − 2⁻ˣ</td><td>[0, 1]</td><td class="n">0.641174 (14)</td><td class="n">0.641186 (4)</td></tr>
+  <tr><td>b) eˣ − x² + 3x − 2</td><td>[0, 1]</td><td class="n">0.257523 (16)</td><td class="n">0.257530 (4)</td></tr>
+  <tr><td rowspan="2">c) 2x cos(2x) − (x+1)²</td><td>[−3, −2]</td><td class="n">−2.191284 (13)</td><td class="n">−2.191308 (5)</td></tr>
+  <tr><td>[−1, 0]</td><td class="n">−0.798157 (14)</td><td class="n">−0.798160 (8)</td></tr>
+</table>
+
+<h3>Ej. 3 y 4</h3>
+<table>
+  <tr><th>Ejercicio</th><th>Ecuación</th><th>Método</th><th>Resultado</th><th>Iter.</th></tr>
+  <tr><td>3) √3, 0.01 %</td><td>x² − 3 en [1, 2]</td><td>Secante</td><td class="n">1.732051</td><td class="n">4</td></tr>
+  <tr><td>4) ∛25, 10⁻⁴</td><td>x³ − 25, p₀ = 2.5</td><td>Newton</td><td class="n">2.924018</td><td class="n">4</td></tr>
+</table>
+
+<h3>Ej. 5 — error porcentual 0.001 %</h3>
+<table>
+  <tr><th>Ecuación</th><th>Intervalo</th><th>Bisección</th><th>Pos. falsa</th><th>Secante</th><th>Newton</th></tr>
+  <tr><td rowspan="2">a) (x−2)² − ln x</td><td>[1, 2]</td><td class="n">1.412392 (17)</td><td class="n">1.412392 (9)</td><td class="n">1.412391 (6)</td><td class="n">1.412391 (4)</td></tr>
+  <tr><td>[e, 4]</td><td class="n">3.057115 (16)</td><td class="n">3.057090 (10)</td><td class="n">3.057104 (6)</td><td class="n">3.057104 (4)</td></tr>
+  <tr><td rowspan="2">b) sen x − e⁻ˣ</td><td>[0, 1]</td><td class="n">0.588535 (18)</td><td class="n">0.588533 (8)</td><td class="n">0.588533 (5)</td><td class="n">0.588533 (3)</td></tr>
+  <tr><td>[3, 4]</td><td class="n">3.096344 (15)</td><td class="n">3.096364 (4)</td><td class="n">3.096364 (4)</td><td class="n">3.096364 (3)</td></tr>
+  <tr><td rowspan="2">c) 230x⁴+18x³+9x²−221x−9</td><td>[−1, 0]</td><td class="n">−0.040659 (22)</td><td class="n">−0.040659 (17)</td><td class="n">−0.040659 (4)</td><td class="n">−0.040659 (4)</td></tr>
+  <tr><td>[0, 1]</td><td class="n">0.962395 (17)</td><td class="n">0.962398 (7)</td><td class="n">0.962398* (4)</td><td class="n">0.962398* (4)</td></tr>
+</table>
+<p>* En 5c [0, 1], Secante desde (0, 1) y Newton desde 0.5 <strong>se escapan</strong> a la raíz −0.0407.
+Con mejores puntos iniciales (Secante con 0.9 y 1, Newton desde 1) convergen a 0.962398 en 4 iteraciones.
+Es un buen ejemplo para justificar por qué los métodos abiertos “no siempre convergen”.</p>
+
+<!-- ===================================================== -->
+<h2 id="trampas">7. Trampas típicas</h2>
+<ul>
+  <li><strong>“f(a) y f(b) tienen el mismo signo”</strong>: en ese intervalo no se puede usar bisección ni posición falsa. Revisá si copiaste bien la ecuación o el intervalo.</li>
+  <li><strong>Porcentual vs relativo</strong>: 0.01 % <em>no</em> es <code>TOL = 0.01</code> con <code>"relativo"</code>. O ponés <code>0.01</code> + <code>"porcentual"</code>, o <code>1e-4</code> + <code>"relativo"</code>.</li>
+  <li><strong><code>FUERA DEL INTERVALO</code></strong> en Secante o Newton: el método convergió a <em>otra</em> raíz. Cambiá el punto inicial (<code>X0_NEWTON</code>) o achicá el intervalo para acercar los puntos de arranque a la raíz.</li>
+  <li><strong>Derivada mal escrita</strong>: si dudás, dejá <code>DF = None</code> y la calcula sola.</li>
+  <li><strong>ln de negativo / división por cero</strong>: por ejemplo, ln x con x ≤ 0. El programa lo informa en <code>Obs.</code>; elegí otro punto inicial.</li>
+  <li><strong>Contar iteraciones</strong>: distintos libros cuentan distinto (si cuenta o no la iteración 0). Si te piden “cuántas iteraciones”, aclarás el criterio y listo.</li>
+</ul>
+
+<!-- ===================================================== -->
+<h2 id="checklist">8. Checklist del día del parcial</h2>
+<ul class="check">
+  <li>Llevar <code>metodos.py</code> (y <code>guia.py</code> + esta guía) en pendrive <em>y</em> en la nube/mail.</li>
+  <li>Verificar que la PC tenga Python 3: <code>python3 --version</code> (en Windows puede ser <code>python</code> o <code>py</code>).</li>
+  <li>Leer el enunciado y anotar: <strong>ecuación, intervalos, tolerancia, tipo de error, métodos pedidos</strong>.</li>
+  <li>Editar el bloque CONFIGURACION y correr.</li>
+  <li>Revisar la columna <code>Obs.</code>: ¿algún método falló o se fue del intervalo?</li>
+  <li>Copiar la tabla comparativa a la entrega y agregar la conclusión (sección 4).</li>
+</ul>
+
+</main>
+</body>
+</html>

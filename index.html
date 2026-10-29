@@ -1,0 +1,476 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TP5 — Bisección, Secante y Newton</title>
+<style>
+  .viz-root {
+    color-scheme: light;
+    --page: #f9f9f7;
+    --surface-1: #fcfcfb;
+    --text-primary: #0b0b0b;
+    --text-secondary: #52514e;
+    --muted: #898781;
+    --grid: #e1e0d9;
+    --axis: #c3c2b7;
+    --border: rgba(11,11,11,0.10);
+    --series-1: #2a78d6;
+    --series-2: #eb6834;
+    --series-3: #1baf7a;
+    --warning-bg: #fdf1d6;
+    --warning-ink: #6b4a00;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) .viz-root {
+      color-scheme: dark;
+      --page: #0d0d0d;
+      --surface-1: #1a1a19;
+      --text-primary: #f0efec;
+      --text-secondary: #c3c2b7;
+      --grid: #2c2c2a;
+      --axis: #383835;
+      --border: rgba(255,255,255,0.10);
+      --series-1: #3987e5;
+      --series-2: #d95926;
+      --series-3: #199e70;
+      --warning-bg: #3a2c0a;
+      --warning-ink: #f3cf7a;
+    }
+  }
+  :root[data-theme="dark"] .viz-root {
+    color-scheme: dark;
+    --page: #0d0d0d;
+    --surface-1: #1a1a19;
+    --text-primary: #f0efec;
+    --text-secondary: #c3c2b7;
+    --grid: #2c2c2a;
+    --axis: #383835;
+    --border: rgba(255,255,255,0.10);
+    --series-1: #3987e5;
+    --series-2: #d95926;
+    --series-3: #199e70;
+    --warning-bg: #3a2c0a;
+    --warning-ink: #f3cf7a;
+  }
+
+  * { box-sizing: border-box; }
+  body { margin: 0; }
+  .viz-root {
+    min-height: 100vh;
+    background: var(--page);
+    color: var(--text-primary);
+    font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif;
+    padding: 24px;
+  }
+  .wrap { max-width: 1100px; margin: 0 auto; display: grid; gap: 16px; }
+  h1 { font-size: 20px; margin: 0; }
+  h2 { font-size: 15px; margin: 0 0 2px; }
+  .sub { color: var(--text-secondary); margin: 2px 0 0; }
+  .card {
+    background: var(--surface-1);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+  }
+  .controls { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; }
+  .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  .seg button {
+    font: inherit; color: var(--text-secondary); background: transparent;
+    border: 0; padding: 6px 14px; cursor: pointer;
+  }
+  .seg button + button { border-left: 1px solid var(--border); }
+  .seg button[aria-pressed="true"] { background: var(--text-primary); color: var(--surface-1); font-weight: 600; }
+  label { color: var(--text-secondary); display: inline-flex; gap: 8px; align-items: center; }
+  input[type=number] {
+    font: inherit; width: 90px; padding: 5px 8px; border-radius: 6px;
+    border: 1px solid var(--border); background: var(--surface-1); color: var(--text-primary);
+  }
+  .link { font: inherit; background: none; border: 0; color: var(--text-secondary); text-decoration: underline; cursor: pointer; padding: 0; }
+
+  .tiles { display: grid; grid-template-columns: repeat(var(--cols, 3), 1fr); gap: 16px; }
+  .tile .name { display: flex; align-items: center; gap: 8px; color: var(--text-secondary); }
+  .swatch { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+  .tile .val { font-size: 26px; font-weight: 600; margin: 4px 0 0; }
+  .tile .meta { color: var(--text-secondary); font-size: 13px; }
+  .warn {
+    margin-top: 8px; padding: 6px 10px; border-radius: 6px; font-size: 13px;
+    background: var(--warning-bg); color: var(--warning-ink);
+  }
+
+  .charts { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .chart { position: relative; }
+  svg { display: block; width: 100%; height: auto; overflow: visible; }
+  svg text { fill: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; }
+  .legend { display: flex; gap: 16px; flex-wrap: wrap; margin: 8px 0 4px; color: var(--text-secondary); font-size: 13px; }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .tip {
+    position: absolute; pointer-events: none; display: none; z-index: 2;
+    background: var(--surface-1); border: 1px solid var(--border); border-radius: 8px;
+    padding: 8px 10px; font-size: 12px; box-shadow: 0 4px 16px rgba(0,0,0,.12);
+    white-space: nowrap; font-variant-numeric: tabular-nums;
+  }
+  .tip b { color: var(--text-primary); }
+  .tip .row { display: flex; align-items: center; gap: 6px; color: var(--text-secondary); }
+
+  .tables { display: grid; grid-template-columns: repeat(var(--cols, 3), 1fr); gap: 16px; align-items: start; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; font-variant-numeric: tabular-nums; }
+  th, td { text-align: right; padding: 4px 6px; border-bottom: 1px solid var(--grid); }
+  th { color: var(--text-secondary); font-weight: 600; }
+  td:first-child, th:first-child { text-align: left; }
+  tr.final td { font-weight: 700; }
+  .out td { color: var(--warning-ink); }
+
+  @media (max-width: 860px) {
+    .tiles, .charts, .tables { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="viz-root">
+<div class="wrap">
+
+  <div class="seg" id="ejercicios" role="group" aria-label="Ejercicio" style="justify-self:start"></div>
+
+  <header>
+    <h1 id="titulo"></h1>
+    <p class="sub" id="subtitulo"></p>
+  </header>
+
+  <div class="card controls">
+    <div class="seg" id="intervalos" role="group" aria-label="Intervalo"></div>
+    <span id="newtonCtl" class="controls">
+      <label>p₀ de Newton <input type="number" id="p0" step="0.1"></label>
+      <button class="link" id="reset">usar punto medio</button>
+    </span>
+  </div>
+
+  <div class="tiles" id="tiles"></div>
+
+  <div class="charts">
+    <div class="card chart" id="chartF">
+      <h2>f(x) en el intervalo</h2>
+      <p class="sub">Los puntos marcan las aproximaciones finales de cada método</p>
+      <div class="legend" id="legendF"></div>
+      <svg viewBox="0 0 520 300"></svg>
+      <div class="tip"></div>
+    </div>
+    <div class="card chart" id="chartE">
+      <h2>Convergencia: error relativo por iteración</h2>
+      <p class="sub">Escala logarítmica · la línea punteada es la tolerancia 10⁻⁴</p>
+      <div class="legend" id="legendE"></div>
+      <svg viewBox="0 0 520 300"></svg>
+      <div class="tip"></div>
+    </div>
+  </div>
+
+  <div class="tables" id="tables"></div>
+
+</div>
+</div>
+
+<script>
+const TOL = 1e-4, MAX_IT = 100;
+const erRel = (nuevo, viejo) => Math.abs((nuevo - viejo) / nuevo);
+
+function biseccion(f, a, b) {
+  const filas = [];
+  let pAnt = null;
+  for (let n = 1; n <= MAX_IT; n++) {
+    const p = (a + b) / 2;
+    const er = pAnt === null ? NaN : erRel(p, pAnt);
+    filas.push({ n, p, fp: f(p), er });
+    if (f(p) === 0 || er < TOL) break;
+    if (f(a) * f(p) < 0) b = p; else a = p;
+    pAnt = p;
+  }
+  return filas;
+}
+
+function secante(f, p0, p1) {
+  const filas = [];
+  for (let n = 1; n <= MAX_IT; n++) {
+    const p = p1 - f(p1) * (p1 - p0) / (f(p1) - f(p0));
+    const er = erRel(p, p1);
+    filas.push({ n, p, fp: f(p), er });
+    if (er < TOL) break;
+    [p0, p1] = [p1, p];
+  }
+  return filas;
+}
+
+function newton(f, df, p0) {
+  const filas = [];
+  for (let n = 1; n <= MAX_IT; n++) {
+    const d = df(p0);
+    if (d === 0) break;
+    const p = p0 - f(p0) / d;
+    const er = erRel(p, p0);
+    filas.push({ n, p, fp: f(p), er });
+    if (er < TOL) break;
+    p0 = p;
+  }
+  return filas;
+}
+
+const f1 = x => x**3 - 7*x**2 + 14*x - 6;
+const f2c = x => 2*x*Math.cos(2*x) - (x + 1)**2;
+const EJERCICIOS = [
+  {
+    id: 1, metodos: ['bis', 'sec', 'new'],
+    sub: 'Bisección, secante y Newton con error relativo &lt; 10⁻⁴ · raíces exactas: 2 − √2, 3, 2 + √2',
+    casos: [
+      { id: 'a', eq: 'x³ − 7x² + 14x − 6', f: f1, df: x => 3*x**2 - 14*x + 14, a: 0, b: 1 },
+      { id: 'b', eq: 'x³ − 7x² + 14x − 6', f: f1, df: x => 3*x**2 - 14*x + 14, a: 1, b: 3.2 },
+      { id: 'c', eq: 'x³ − 7x² + 14x − 6', f: f1, df: x => 3*x**2 - 14*x + 14, a: 3.2, b: 4 },
+    ],
+  },
+  {
+    id: 2, metodos: ['bis', 'sec'],
+    sub: 'Bisección y secante con error relativo &lt; 10⁻⁴',
+    casos: [
+      { id: 'a', eq: 'x − 2⁻ˣ', f: x => x - 2**(-x), a: 0, b: 1 },
+      { id: 'b', eq: 'eˣ − x² + 3x − 2', f: x => Math.exp(x) - x**2 + 3*x - 2, a: 0, b: 1 },
+      { id: 'c', eq: '2x·cos(2x) − (x+1)²', f: f2c, a: -3, b: -2 },
+      { id: 'c', eq: '2x·cos(2x) − (x+1)²', f: f2c, a: -1, b: 0 },
+    ],
+  },
+  {
+    id: 3, metodos: ['sec'],
+    sub: 'Aproximación de √3 = 1.7320508… con secante · error porcentual &lt; 0.01% (relativo &lt; 10⁻⁴)',
+    casos: [
+      { id: '', eq: 'x² − 3', f: x => x**2 - 3, a: 1, b: 2 },
+    ],
+  },
+];
+const METODOS = [
+  { key: 'bis', nombre: 'Bisección', color: 'var(--series-1)' },
+  { key: 'sec', nombre: 'Secante', color: 'var(--series-2)' },
+  { key: 'new', nombre: 'Newton', color: 'var(--series-3)' },
+];
+
+const state = { ej: EJERCICIOS[0], iv: EJERCICIOS[0].casos[0], p0: null };
+const metodos = () => METODOS.filter(m => state.ej.metodos.includes(m.key));
+const fmt = (x, d = 8) => Number.isFinite(x) ? x.toFixed(d) : '—';
+const fexp = x => Number.isFinite(x) ? x.toExponential(3) : '—';
+const NS = 'http://www.w3.org/2000/svg';
+function el(tag, attrs = {}, parent) {
+  const e = document.createElementNS(NS, tag);
+  for (const k in attrs) e.setAttribute(k, attrs[k]);
+  if (parent) parent.appendChild(e);
+  return e;
+}
+const swatch = c => `<span class="swatch" style="background:${c}"></span>`;
+
+function niceTicks(lo, hi, count = 5) {
+  const step0 = (hi - lo) / count;
+  const mag = 10 ** Math.floor(Math.log10(step0));
+  const step = [1, 2, 2.5, 5, 10].map(m => m * mag).find(s => s >= step0);
+  const ticks = [];
+  for (let t = Math.ceil(lo / step) * step; t <= hi + 1e-12; t += step) ticks.push(+t.toFixed(10));
+  return ticks;
+}
+
+const W = 520, H = 300, M = { l: 52, r: 16, t: 12, b: 32 };
+
+function frame(svg, xs, ys, xTicks, yTicks, yLabel) {
+  svg.innerHTML = '';
+  for (const t of yTicks) {
+    const y = ys(t);
+    el('line', { x1: M.l, x2: W - M.r, y1: y, y2: y, stroke: 'var(--grid)', 'stroke-width': 1 }, svg);
+    el('text', { x: M.l - 6, y: y + 4, 'text-anchor': 'end' }, svg).textContent = yLabel(t);
+  }
+  for (const t of xTicks) {
+    el('text', { x: xs(t), y: H - M.b + 16, 'text-anchor': 'middle' }, svg).textContent = t;
+  }
+  el('line', { x1: M.l, x2: W - M.r, y1: H - M.b, y2: H - M.b, stroke: 'var(--axis)', 'stroke-width': 1 }, svg);
+}
+
+function placeTip(card, tip, svg, px, py, html) {
+  tip.innerHTML = html;
+  tip.style.display = 'block';
+  const r = svg.getBoundingClientRect(), cr = card.getBoundingClientRect();
+  const sx = r.width / W;
+  let left = r.left - cr.left + px * sx + 12;
+  if (left + tip.offsetWidth > cr.width - 8) left = r.left - cr.left + px * sx - tip.offsetWidth - 12;
+  tip.style.left = left + 'px';
+  tip.style.top = (r.top - cr.top + py * (r.height / H) - tip.offsetHeight / 2) + 'px';
+}
+
+function svgX(svg, ev) {
+  const r = svg.getBoundingClientRect();
+  return (ev.clientX - r.left) * (W / r.width);
+}
+
+function chartF(res) {
+  const card = document.getElementById('chartF');
+  const svg = card.querySelector('svg'), tip = card.querySelector('.tip');
+  const { a, b, f } = state.iv;
+  const N = 200, pts = [];
+  for (let i = 0; i <= N; i++) { const x = a + (b - a) * i / N; pts.push([x, f(x)]); }
+  let yMin = Math.min(0, ...pts.map(p => p[1])), yMax = Math.max(0, ...pts.map(p => p[1]));
+  const pad = (yMax - yMin) * 0.08; yMin -= pad; yMax += pad;
+  const xs = x => M.l + (x - a) / (b - a) * (W - M.l - M.r);
+  const ys = y => M.t + (yMax - y) / (yMax - yMin) * (H - M.t - M.b);
+  frame(svg, xs, ys, niceTicks(a, b, 6), niceTicks(yMin, yMax, 5), t => t);
+
+  el('line', { x1: M.l, x2: W - M.r, y1: ys(0), y2: ys(0), stroke: 'var(--axis)', 'stroke-width': 1 }, svg);
+  el('path', {
+    d: pts.map((p, i) => (i ? 'L' : 'M') + xs(p[0]).toFixed(1) + ',' + ys(p[1]).toFixed(1)).join(''),
+    fill: 'none', stroke: 'var(--text-secondary)', 'stroke-width': 2, 'stroke-linejoin': 'round',
+  }, svg);
+
+  // Aproximación final de cada método (sólo si cae dentro del intervalo)
+  metodos().forEach((m, i) => {
+    const p = res[m.key].at(-1).p;
+    if (p < a || p > b) return;
+    el('circle', { cx: xs(p), cy: ys(0), r: 6 - i, fill: m.color, stroke: 'var(--surface-1)', 'stroke-width': 2 }, svg);
+  });
+  // Se usa la primera aproximación que quede dentro del intervalo (la bisección siempre lo está).
+  // La etiqueta va del lado con más espacio horizontal y del lado del eje x donde no pasa la curva.
+  const raiz = metodos().map(m => res[m.key].at(-1).p).find(p => p >= a && p <= b);
+  if (raiz !== undefined) {
+    const izq = xs(raiz) > W / 2;
+    const fLado = izq ? f(a) : f(b);
+    el('text', {
+      x: xs(raiz), y: ys(0) + (fLado > 0 ? 18 : -10), dx: izq ? -8 : 8,
+      'text-anchor': izq ? 'end' : 'start', style: 'fill:var(--text-secondary)',
+    }, svg).textContent = 'raíz ≈ ' + raiz.toFixed(6);
+  }
+
+  const cross = el('line', { y1: M.t, y2: H - M.b, stroke: 'var(--axis)', 'stroke-width': 1, visibility: 'hidden' }, svg);
+  const dot = el('circle', { r: 4, fill: 'var(--text-primary)', stroke: 'var(--surface-1)', 'stroke-width': 2, visibility: 'hidden' }, svg);
+  svg.onpointermove = ev => {
+    const px = Math.min(Math.max(svgX(svg, ev), M.l), W - M.r);
+    const x = a + (px - M.l) / (W - M.l - M.r) * (b - a);
+    cross.setAttribute('x1', px); cross.setAttribute('x2', px); cross.setAttribute('visibility', 'visible');
+    dot.setAttribute('cx', px); dot.setAttribute('cy', ys(f(x))); dot.setAttribute('visibility', 'visible');
+    placeTip(card, tip, svg, px, ys(f(x)), `<div>x = <b>${x.toFixed(5)}</b></div><div>f(x) = <b>${f(x).toFixed(5)}</b></div>`);
+  };
+  svg.onpointerleave = () => { tip.style.display = 'none'; cross.setAttribute('visibility', 'hidden'); dot.setAttribute('visibility', 'hidden'); };
+
+  document.getElementById('legendF').innerHTML =
+    metodos().map(m => `<span>${swatch(m.color)}${m.nombre}</span>`).join('');
+}
+
+function chartE(res) {
+  const card = document.getElementById('chartE');
+  const svg = card.querySelector('svg'), tip = card.querySelector('.tip');
+  const series = metodos().map(m => ({ ...m, pts: res[m.key].filter(r => Number.isFinite(r.er) && r.er > 0).map(r => [r.n, r.er]) }));
+  const all = series.flatMap(s => s.pts);
+  const nMax = Math.max(...all.map(p => p[0]));
+  const lo = Math.floor(Math.log10(Math.min(...all.map(p => p[1]), TOL)));
+  const hi = Math.ceil(Math.log10(Math.max(...all.map(p => p[1]))));
+  const xs = n => M.l + (n - 1) / Math.max(nMax - 1, 1) * (W - M.l - M.r);
+  const ys = e => M.t + (hi - Math.log10(e)) / (hi - lo) * (H - M.t - M.b);
+  const yt = [];
+  const stepE = Math.ceil((hi - lo) / 6);
+  for (let k = hi; k >= lo; k -= stepE) yt.push(10 ** k);
+  const xt = niceTicks(1, nMax, Math.min(nMax - 1, 8)).filter(t => Number.isInteger(t));
+  frame(svg, xs, ys, xt, yt, t => '1e' + Math.round(Math.log10(t)));
+  el('text', { x: W - M.r, y: H - 2, 'text-anchor': 'end' }, svg).textContent = 'iteración n';
+
+  el('line', { x1: M.l, x2: W - M.r, y1: ys(TOL), y2: ys(TOL), stroke: 'var(--muted)', 'stroke-width': 1, 'stroke-dasharray': '4 4' }, svg);
+  el('text', { x: M.l + 6, y: ys(TOL) + 14, 'text-anchor': 'start' }, svg).textContent = 'tol 10⁻⁴';
+
+  for (const s of series) {
+    el('path', {
+      d: s.pts.map((p, i) => (i ? 'L' : 'M') + xs(p[0]).toFixed(1) + ',' + ys(p[1]).toFixed(1)).join(''),
+      fill: 'none', stroke: s.color, 'stroke-width': 2, 'stroke-linejoin': 'round',
+    }, svg);
+    for (const p of s.pts) el('circle', { cx: xs(p[0]), cy: ys(p[1]), r: 3.5, fill: s.color, stroke: 'var(--surface-1)', 'stroke-width': 1.5 }, svg);
+  }
+
+  const cross = el('line', { y1: M.t, y2: H - M.b, stroke: 'var(--axis)', 'stroke-width': 1, visibility: 'hidden' }, svg);
+  svg.onpointermove = ev => {
+    const n = Math.round(1 + (svgX(svg, ev) - M.l) / (W - M.l - M.r) * (nMax - 1));
+    const nn = Math.min(Math.max(n, 1), nMax);
+    const px = xs(nn);
+    cross.setAttribute('x1', px); cross.setAttribute('x2', px); cross.setAttribute('visibility', 'visible');
+    const rows = metodos().map(m => {
+      const r = res[m.key].find(r => r.n === nn);
+      return `<div class="row">${swatch(m.color)}${m.nombre}: <b>${r ? fexp(r.er) : '—'}</b></div>`;
+    }).join('');
+    placeTip(card, tip, svg, px, (M.t + H - M.b) / 2, `<div>n = <b>${nn}</b></div>${rows}`);
+  };
+  svg.onpointerleave = () => { tip.style.display = 'none'; cross.setAttribute('visibility', 'hidden'); };
+
+  document.getElementById('legendE').innerHTML =
+    metodos().map(m => `<span>${swatch(m.color)}${m.nombre}</span>`).join('');
+}
+
+function render() {
+  const { a, b, f, df, eq } = state.iv;
+  const ms = metodos();
+  const p0 = state.p0 ?? (a + b) / 2;
+  document.getElementById('titulo').textContent = `f(x) = ${eq} = 0`;
+  document.getElementById('subtitulo').innerHTML = state.ej.sub;
+  document.getElementById('newtonCtl').style.display = df ? '' : 'none';
+  document.getElementById('p0').value = +p0.toFixed(6);
+  document.querySelector('.wrap').style.setProperty('--cols', ms.length);
+  const res = { bis: biseccion(f, a, b), sec: secante(f, a, b) };
+  if (df) res.new = newton(f, df, p0);
+  const fuera = p => p < a || p > b;
+
+  document.getElementById('tiles').innerHTML = ms.map(m => {
+    const r = res[m.key], last = r.at(-1);
+    const extra = m.key === 'new' ? `p₀ = ${+p0.toFixed(6)}` : m.key === 'sec' ? `p₀ = ${a}, p₁ = ${b}` : `[${a}, ${b}]`;
+    const warn = fuera(last.p)
+      ? `<div class="warn">⚠ Atención: convergió fuera del intervalo [${a}, ${b}]</div>` : '';
+    return `<div class="card tile">
+      <div class="name">${swatch(m.color)}${m.nombre}</div>
+      <div class="val">${fmt(last.p)}</div>
+      <div class="meta">${r.length} iteraciones · Er = ${fexp(last.er)} · ${extra}</div>${warn}
+    </div>`;
+  }).join('');
+
+  document.getElementById('tables').innerHTML = ms.map(m => `
+    <div class="card">
+      <h2 style="display:flex;align-items:center;gap:8px">${swatch(m.color)}${m.nombre}</h2>
+      <table>
+        <thead><tr><th>n</th><th>pₙ</th><th>f(pₙ)</th><th>Er</th></tr></thead>
+        <tbody>${res[m.key].map((r, i, arr) => `
+          <tr class="${i === arr.length - 1 ? 'final' : ''} ${fuera(r.p) ? 'out' : ''}">
+            <td>${r.n}</td><td>${fmt(r.p)}</td><td>${fexp(r.fp)}</td><td>${fexp(r.er)}</td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>`).join('');
+
+  chartF(res);
+  chartE(res);
+}
+
+function botones(seg, items, label, activo, onSelect) {
+  seg.innerHTML = '';
+  for (const it of items) {
+    const btn = document.createElement('button');
+    btn.textContent = label(it);
+    btn.setAttribute('aria-pressed', it === activo);
+    btn.onclick = () => {
+      seg.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x === btn));
+      onSelect(it);
+    };
+    seg.appendChild(btn);
+  }
+}
+function botonesIntervalo() {
+  botones(document.getElementById('intervalos'), state.ej.casos, c => `${c.id ? c.id + ') ' : ''}[${c.a}, ${c.b}]`, state.iv,
+    c => { state.iv = c; state.p0 = null; render(); });
+}
+botones(document.getElementById('ejercicios'), EJERCICIOS, e => `Ejercicio ${e.id}`, state.ej, e => {
+  state.ej = e; state.iv = e.casos[0]; state.p0 = null;
+  botonesIntervalo();
+  render();
+});
+botonesIntervalo();
+document.getElementById('p0').onchange = e => {
+  const v = parseFloat(e.target.value);
+  state.p0 = Number.isFinite(v) ? v : null;
+  render();
+};
+document.getElementById('reset').onclick = () => { state.p0 = null; render(); };
+render();
+</script>
+</body>
+</html>
