@@ -22,6 +22,7 @@ TIPO_ERROR = "relativo"  # "relativo" (ej. 1e-4) o "porcentual" (ej. 0.01 para 0
 METODOS = ["biseccion", "posicion_falsa", "secante", "newton"]
 X0_NEWTON = None  # None = punto medio de cada intervalo
 VER_ITERACIONES = True
+CONCLUSIONES = True  # compara los 4 metodos y saca conclusiones (necesita formulas.py)
 # =======================================================================
 
 MAX_IT = 200
@@ -85,6 +86,8 @@ def _fila(n, valores, mostrar):
 def _cerrado(f, a, b, tol, porcentual, mostrar, nuevo_punto):
     if f(a) * f(b) > 0:
         raise Error(f"f(a)={f(a):.4g} y f(b)={f(b):.4g} tienen el mismo signo")
+    if f(a) == 0 or f(b) == 0:  # un extremo ya es la raiz
+        return (a if f(a) == 0 else b), 0, 0.0
     if mostrar:
         _cabecera(["n", "a", "b", "p", "f(p)", "error"])
     p_ant = None
@@ -145,7 +148,7 @@ def newton(f, df, p0, tol, porcentual=False, mostrar=True):
 
 
 def resolver(f_texto, intervalos, tol, tipo_error="relativo", metodos=None,
-             df_texto=None, x0=None, mostrar=True, titulo=None):
+             df_texto=None, x0=None, mostrar=True, titulo=None, conclusiones=False):
     """Corre los metodos pedidos en cada intervalo e imprime la tabla comparativa."""
     metodos = metodos or ["biseccion", "posicion_falsa", "secante", "newton"]
     porcentual = tipo_error == "porcentual"
@@ -196,8 +199,21 @@ def resolver(f_texto, intervalos, tol, tipo_error="relativo", metodos=None,
     for fila in resumen:
         print(linea(("" if fila[0] == anterior else fila[0],) + fila[1:]))
         anterior = fila[0]
+
+    if conclusiones:
+        try:
+            from formulas import analizar
+        except ImportError:
+            print("\nPara ver las conclusiones, poner formulas.py en la misma carpeta.")
+            return resumen
+        for intervalo in intervalos:
+            a, b = (a_numero(v) for v in intervalo)
+            print(f"\n--- Conclusiones en [{intervalo[0]}, {intervalo[1]}], comparando los 4 metodos ---")
+            analizar(f, df, a, b, tol / 100 if porcentual else tol, a_numero(x0) if x0 is not None else None)
     return resumen
 
 
 if __name__ == "__main__":
-    resolver(F, INTERVALOS, TOL, TIPO_ERROR, METODOS, DF, X0_NEWTON, VER_ITERACIONES)
+    resolver(F, INTERVALOS, TOL, TIPO_ERROR, METODOS, DF, X0_NEWTON, VER_ITERACIONES, conclusiones=CONCLUSIONES)
+    #resolver("x-2^-x",[(0,1)],TOL,"relativo",["biseccion", "secante"],None,None, VER_ITERACIONES)
+    resolver("x+e^x",[(-1,0)],TOL,"relativo",["newton",],"1+e^x",0,VER_ITERACIONES)
